@@ -1,8 +1,8 @@
 // Tela de entrada + consentimento do conector (aberta pelo Claude/ChatGPT na
 // hora de conectar). Tudo que vem do cliente OAuth (nome, domínio) é escapado.
 
-// Logo HEROGRAN no padrão do app (src/index.css, .font-logo): Poppins 700, espaçamento 0.05em
-const FONTE_LOGO = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">';
+// Fontes do app: Inter no corpo (src/index.css, body font-inter) e Poppins 700 no logo (.font-logo)
+const FONTE_LOGO = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Poppins:wght@700&display=swap" rel="stylesheet">';
 
 export const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -33,19 +33,20 @@ ${FONTE_LOGO}
   :root { --azul:#162839; --amarelo:#fab700; --cinza:#8a8f98; --borda:#e2e5e9; --erro:#b42318; }
   * { box-sizing: border-box; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px;
-         background:var(--azul); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--azul); }
+         background:var(--azul); font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--azul); }
   main { width:100%; max-width:420px; background:#fff; padding:32px 28px; }
   h1 { margin:0 0 4px; font-family:'Poppins', sans-serif; font-size:26px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; line-height:1.1; }
   .sub { margin:0 0 24px; color:var(--cinza); font-size:13px; }
   .pedido { border-left:3px solid var(--amarelo); background:#fffbeb; padding:12px 14px; font-size:14px; line-height:1.5; margin-bottom:20px; }
   .pedido small { display:block; color:#5b616b; margin-top:4px; }
   .alerta { background:#fef3f2; color:var(--erro); padding:10px 12px; font-size:13px; margin-bottom:16px; }
-  label { display:block; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.15em; color:var(--cinza); margin:14px 0 6px; }
-  input { width:100%; height:44px; border:1px solid var(--borda); padding:0 12px; font-size:15px; color:var(--azul); }
+  label { display:block; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--cinza); margin:14px 0 6px; }
+  input { width:100%; height:48px; border:1px solid var(--borda); border-radius:0; padding:0 16px; font-family:inherit; font-size:14px; color:var(--azul); }
   input:focus { outline:none; border-color:var(--azul); }
   ul { margin:18px 0 0; padding-left:18px; font-size:13px; color:#3d4450; line-height:1.6; }
-  .botoes { display:flex; gap:10px; margin-top:24px; }
-  button { flex:1; height:44px; border:1px solid var(--azul); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; cursor:pointer; }
+  .botoes { display:flex; flex-direction:column; gap:10px; margin-top:24px; }
+  button { width:100%; height:44px; border:1px solid var(--azul); border-radius:0; font-family:inherit; font-size:14px; font-weight:900; text-transform:uppercase; letter-spacing:.2em; cursor:pointer; }
+  button:hover { filter:brightness(.92); }
   .sim { background:var(--amarelo); border-color:var(--amarelo); color:var(--azul); }
   .nao { background:#fff; color:var(--azul); }
 </style>
@@ -78,8 +79,8 @@ ${FONTE_LOGO}
       <li>Nunca exclui nada, não marca negócio como ganho nem mexe em preços</li>
     </ul>
     <div class="botoes">
-      <button class="nao" name="decision" value="deny" formnovalidate>Recusar</button>
       <button class="sim" name="decision" value="approve">Entrar e permitir</button>
+      <button class="nao" name="decision" value="deny" formnovalidate>Recusar</button>
     </div>
   </form>
 </main>
@@ -89,7 +90,7 @@ ${FONTE_LOGO}
 
 export function telaErro(mensagem: string, status = 400): Response {
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HEROGRAN</title>${FONTE_LOGO}<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:#162839;font-family:system-ui,sans-serif}
+<title>HEROGRAN</title>${FONTE_LOGO}<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:#162839;font-family:'Inter',system-ui,sans-serif}
 main{max-width:420px;background:#fff;padding:28px;color:#162839}h1{font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;letter-spacing:.05em;margin:0 0 12px}</style></head>
 <body><main><h1>HEROGRAN</h1><p>${esc(mensagem)}</p><p>Volte ao Claude ou ChatGPT e tente conectar de novo.</p></main></body></html>`;
   return new Response(html, { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY' } });
