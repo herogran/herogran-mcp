@@ -185,6 +185,16 @@ export const FERRAMENTAS: Ferramenta[] = [
     acao: 'listar_materiais',
   },
   {
+    name: 'listar_acabamentos',
+    title: 'Listar acabamentos',
+    description:
+      'Lista os acabamentos de borda (reto, bisotado, boleado, meia cana, compostos e os personalizados da marmoraria). ' +
+      'Use o id em saia.acabamento ou frontao.acabamento ao adicionar peças. O preço vem da tabela da marmoraria.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { ...leitura, title: 'Listar acabamentos' },
+    acao: 'listar_acabamentos',
+  },
+  {
     name: 'ver_orcamento',
     title: 'Ver orçamento (CAD3D)',
     description: 'Mostra os orçamentos de uma negociação, com os ambientes e as peças já lançadas no projeto 3D (CAD3D).',
@@ -205,7 +215,8 @@ export const FERRAMENTAS: Ferramenta[] = [
       'Monte o orçamento conversando, uma pergunta de cada vez, como o formulário do CAD3D: ' +
       '1) qual negociação (ou crie com criar_negocio); 2) o ambiente (Cozinha, Banheiro...); ' +
       '3) para cada peça: tipo, medidas (largura e profundidade; no nicho, largura e altura), frontão (altura e lados), ' +
-      'saia (altura e lados), guarnição se houver, cuba (pia, lavatório e tanque), quantidade e material (de listar_materiais). ' +
+      'saia (montagem 45/topo/engrossado/simples, altura, lados e acabamento da borda de listar_acabamentos), guarnição se houver, ' +
+      'pé (fechado, aberto ou com vira, altura e lados; só com saia 45), cuba (pia, lavatório e tanque), quantidade e material (de listar_materiais). ' +
       'Medidas sempre em centímetros: converta se o usuário falar em metros ou milímetros. ' +
       'Antes de gravar, mostre um resumo das peças e peça confirmação. ' +
       'O preço é calculado pelo HEROGRAN: depois de gravar, entregue o link do projeto para o usuário conferir valores, acabamentos e gerar o PDF.',
@@ -233,14 +244,22 @@ export const FERRAMENTAS: Ferramenta[] = [
                 properties: {
                   altura_cm: { type: 'number', minimum: 0 },
                   lados: { type: 'array', items: { type: 'string', enum: ['atras', 'esquerda', 'direita'] } },
+                  acabamento: { type: 'string', description: 'Id do acabamento (de listar_acabamentos), opcional' },
                 },
                 additionalProperties: false,
               },
               saia: {
                 type: 'object',
                 properties: {
+                  montagem: {
+                    type: 'string',
+                    enum: ['45', 'topo', 'engrossado', 'simples'],
+                    description: '45 = saia em 45 graus (padrão); topo = saia de topo, sobe acima do tampo; engrossado = peça reta colada embaixo (use guarnicao.largura_cm); simples = tampo cru, sem saia',
+                  },
                   altura_cm: { type: 'number', minimum: 0 },
                   lados: { type: 'array', items: { type: 'string', enum: ['frente', 'esquerda', 'direita'] } },
+                  acabamento: { type: 'string', description: 'Id do acabamento da borda (de listar_acabamentos), ex.: reto, bisotado, boleado, meia_cana' },
+                  transpasse_cm: { type: 'number', minimum: 0, description: 'Só na montagem topo: quanto a saia sobe acima do tampo (padrão 2)' },
                 },
                 additionalProperties: false,
               },
@@ -264,6 +283,19 @@ export const FERRAMENTAS: Ferramenta[] = [
                   largura_cm: { type: 'number', minimum: 0 },
                   profundidade_cm: { type: 'number', minimum: 0 },
                 },
+                additionalProperties: false,
+              },
+              pe: {
+                type: 'object',
+                description: 'Pé da bancada. Só em Pia, Tanque, Lavatório, Bancada, Cooktop e Ilha, com saia em 45 graus',
+                properties: {
+                  tipo: { type: 'string', enum: ['fechado', 'aberto', 'vira'], description: 'fechado, aberto ou vira (pé com vira)' },
+                  altura_cm: { type: 'number', minimum: 0, description: 'Altura do pé (padrão 75)' },
+                  lados: { type: 'array', minItems: 1, items: { type: 'string', enum: ['esquerda', 'frente', 'direita'] } },
+                  vira_cm: { type: 'number', minimum: 0, description: 'Só no pé com vira: tamanho da vira (padrão 5)' },
+                  abas: { type: 'boolean', description: 'Pé aberto/vira com abas laterais (padrão sim)' },
+                },
+                required: ['tipo', 'lados'],
                 additionalProperties: false,
               },
               nicho: {
