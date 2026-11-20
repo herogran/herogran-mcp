@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "herogran-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Necessário para o CIMD (busca do documento do cliente só em endereços públicos)
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "kv_namespaces": [
+    // KV "herogran-mcp-OAUTH_KV" (tokens do OAuth)
+    { "binding": "OAUTH_KV", "id": "c430fbbe56c74a65ad50748c0b7b1cb1" }
+  ],
+  "vars": {
+    "APP_URL": "https://app.herograncrm.com.br",
+    "BASE44_APP_ID": "69c0337a793982a1d9108e7b"
+  },
+  "observability": { "enabled": true }
+}
