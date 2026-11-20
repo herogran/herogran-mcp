@@ -11,7 +11,8 @@ const INSTRUCOES =
   'Conector do HEROGRAN, sistema de orçamento 3D e CRM para marmorarias. ' +
   'Os dados são só da marmoraria do usuário conectado e seguem o perfil de acesso dele. ' +
   'Valores em R$. Antes de criar um negócio ou projeto, confirme os dados com o usuário. ' +
-  'Sempre entregue os links devolvidos para o usuário abrir no HEROGRAN.';
+  'Sempre entregue os links devolvidos para o usuário abrir no HEROGRAN. ' +
+  'Para montar orçamento no CAD3D, pergunte as peças uma a uma (como o formulário do sistema) e use adicionar_pecas_orcamento.';
 
 type Mensagem = { jsonrpc: '2.0'; id?: string | number | null; method?: string; params?: any };
 

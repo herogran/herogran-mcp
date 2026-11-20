@@ -170,6 +170,120 @@ export const FERRAMENTAS: Ferramenta[] = [
     annotations: { ...leitura, title: 'Abrir projeto 3D (CAD3D)' },
     acao: 'detalhar_negociacao',
   },
+  {
+    name: 'listar_materiais',
+    title: 'Listar materiais',
+    description:
+      'Lista os materiais (granitos, mármores, quartzitos...) cadastrados na marmoraria. ' +
+      'Use antes de adicionar peças ao orçamento: o material da peça precisa ser um destes nomes, escrito exatamente igual.',
+    inputSchema: {
+      type: 'object',
+      properties: { busca: { type: 'string', description: 'Trecho do nome ou do tipo, opcional (ex.: "branco", "quartzito")' } },
+      additionalProperties: false,
+    },
+    annotations: { ...leitura, title: 'Listar materiais' },
+    acao: 'listar_materiais',
+  },
+  {
+    name: 'ver_orcamento',
+    title: 'Ver orçamento (CAD3D)',
+    description: 'Mostra os orçamentos de uma negociação, com os ambientes e as peças já lançadas no projeto 3D (CAD3D).',
+    inputSchema: {
+      type: 'object',
+      properties: { negocio_id: { type: 'string', description: 'Id da negociação' } },
+      required: ['negocio_id'],
+      additionalProperties: false,
+    },
+    annotations: { ...leitura, title: 'Ver orçamento (CAD3D)' },
+    acao: 'ver_orcamento',
+  },
+  {
+    name: 'adicionar_pecas_orcamento',
+    title: 'Adicionar peças ao orçamento (CAD3D)',
+    description:
+      'Lança peças no orçamento 3D (CAD3D) de uma negociação, no mesmo formato do editor do HEROGRAN. ' +
+      'Monte o orçamento conversando, uma pergunta de cada vez, como o formulário do CAD3D: ' +
+      '1) qual negociação (ou crie com criar_negocio); 2) o ambiente (Cozinha, Banheiro...); ' +
+      '3) para cada peça: tipo, medidas (largura e profundidade; no nicho, largura e altura), frontão (altura e lados), ' +
+      'saia (altura e lados), guarnição se houver, cuba (pia, lavatório e tanque), quantidade e material (de listar_materiais). ' +
+      'Medidas sempre em centímetros: converta se o usuário falar em metros ou milímetros. ' +
+      'Antes de gravar, mostre um resumo das peças e peça confirmação. ' +
+      'O preço é calculado pelo HEROGRAN: depois de gravar, entregue o link do projeto para o usuário conferir valores, acabamentos e gerar o PDF.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        negocio_id: { type: 'string', description: 'Id da negociação' },
+        ambiente: { type: 'string', description: 'Nome do ambiente; se não existir, é criado' },
+        orcamento: { type: 'string', description: 'Nome do orçamento, opcional (padrão: o orçamento ativo; um nome novo cria outro orçamento)' },
+        pecas: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 30,
+          items: {
+            type: 'object',
+            properties: {
+              tipo: { type: 'string', enum: ['Pia', 'Lavatório', 'Tanque', 'Nicho', 'Bancada', 'Cooktop', 'Ilha', 'Peitoril', 'Soleira', 'Filete', 'Outro'] },
+              nome: { type: 'string', description: 'Opcional; padrão: o tipo' },
+              largura_cm: { type: 'number', exclusiveMinimum: 0 },
+              profundidade_cm: { type: 'number', exclusiveMinimum: 0, description: 'Profundidade da peça (no nicho: a altura)' },
+              quantidade: { type: 'integer', minimum: 1, default: 1 },
+              material: { type: 'string', description: 'Nome exato de listar_materiais' },
+              frontao: {
+                type: 'object',
+                properties: {
+                  altura_cm: { type: 'number', minimum: 0 },
+                  lados: { type: 'array', items: { type: 'string', enum: ['atras', 'esquerda', 'direita'] } },
+                },
+                additionalProperties: false,
+              },
+              saia: {
+                type: 'object',
+                properties: {
+                  altura_cm: { type: 'number', minimum: 0 },
+                  lados: { type: 'array', items: { type: 'string', enum: ['frente', 'esquerda', 'direita'] } },
+                },
+                additionalProperties: false,
+              },
+              guarnicao: {
+                type: 'object',
+                properties: {
+                  largura_cm: { type: 'number', minimum: 0 },
+                  lados: { type: 'array', items: { type: 'string', enum: ['frente', 'esquerda', 'direita'] } },
+                },
+                additionalProperties: false,
+              },
+              cuba: {
+                type: 'object',
+                description: 'Só para Pia, Lavatório e Tanque',
+                properties: {
+                  tipo: {
+                    type: 'string',
+                    enum: ['embitida', 'sobresposta', 'semi-encaixada', 'esculpida-reta', 'esculpida-reta-bandeja', 'esculpida-rampa', 'esculpida-rampa-bandeja'],
+                    description: 'embitida = embutida (padrão); esculpida-* só em lavatório',
+                  },
+                  largura_cm: { type: 'number', minimum: 0 },
+                  profundidade_cm: { type: 'number', minimum: 0 },
+                },
+                additionalProperties: false,
+              },
+              nicho: {
+                type: 'object',
+                description: 'Só para Nicho',
+                properties: { profundidade_cm: { type: 'number', minimum: 0 }, moldura_cm: { type: 'number', minimum: 0 } },
+                additionalProperties: false,
+              },
+            },
+            required: ['tipo', 'largura_cm', 'profundidade_cm', 'material'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['negocio_id', 'ambiente', 'pecas'],
+      additionalProperties: false,
+    },
+    annotations: { ...criacao, title: 'Adicionar peças ao orçamento (CAD3D)' },
+    acao: 'adicionar_pecas_orcamento',
+  },
 ];
 
 /** Troca caminhos relativos ("/negocio/123") por links completos do app, em qualquer profundidade */
