@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "herogran-mcp",
-  "main": "src/index.ts",
+  "main": "index.ts",
   "compatibility_date": "2026-10-01",
   // Necessário para o CIMD (busca do documento do cliente só em endereços públicos)
   "compatibility_flags": ["global_fetch_strictly_public"],
