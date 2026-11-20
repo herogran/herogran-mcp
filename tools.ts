@@ -212,13 +212,16 @@ export const FERRAMENTAS: Ferramenta[] = [
     title: 'Adicionar peças ao orçamento (CAD3D)',
     description:
       'Lança peças no orçamento 3D (CAD3D) de uma negociação, no mesmo formato do editor do HEROGRAN. ' +
-      'Monte o orçamento conversando, uma pergunta de cada vez, como o formulário do CAD3D: ' +
-      '1) qual negociação (ou crie com criar_negocio); 2) o ambiente (Cozinha, Banheiro...); ' +
-      '3) para cada peça: tipo, medidas (largura e profundidade; no nicho, largura e altura), frontão (altura e lados), ' +
-      'saia (montagem 45/topo/engrossado/simples, altura, lados e acabamento da borda de listar_acabamentos), guarnição se houver, ' +
-      'pé (fechado, aberto ou com vira, altura e lados; só com saia 45), cuba (pia, lavatório e tanque), quantidade e material (de listar_materiais). ' +
+      'Pergunte SÓ o que faltar, uma coisa de cada vez, seguindo as etapas do CAD3D para o tipo da peça: ' +
+      'todos: tipo, medidas (largura e profundidade; no nicho, largura e altura), quantidade e material. ' +
+      'Bancada, Cooktop, Ilha, Pia, Lavatório e Tanque: frontão (altura e lados) e saia (montagem 45/topo/engrossado/simples, altura, lados e acabamento da borda); ' +
+      'pé (fechado, aberto ou com vira) só se a saia for 45. Pia e Tanque: guarnição. ' +
+      'Lavatório: tipo da cuba. Pia e Tanque NÃO têm escolha de cuba (sempre embutida): nunca pergunte cuba para eles. ' +
+      'Nicho: profundidade e moldura. Soleira, Peitoril, Filete e Outro: só medidas, quantidade e material. ' +
+      'Não pergunte o que o usuário já disse. Se ele não falar o acabamento da borda, use reto sem perguntar. ' +
+      'Material: use listar_materiais; se houver mais de um nome parecido (ex.: "Verde Ubatuba" e "Verde Ubatuba 2"), use o nome idêntico ao que o usuário falou, e só pergunte se nenhum for idêntico. ' +
       'Medidas sempre em centímetros: converta se o usuário falar em metros ou milímetros. ' +
-      'Antes de gravar, mostre um resumo das peças e peça confirmação. ' +
+      'Antes de gravar, mostre um resumo curto e peça confirmação. ' +
       'O preço é calculado pelo HEROGRAN: depois de gravar, entregue o link do projeto para o usuário conferir valores, acabamentos e gerar o PDF.',
     inputSchema: {
       type: 'object',
@@ -265,6 +268,7 @@ export const FERRAMENTAS: Ferramenta[] = [
               },
               guarnicao: {
                 type: 'object',
+                description: 'Só em Pia e Tanque (ou na saia engrossada)',
                 properties: {
                   largura_cm: { type: 'number', minimum: 0 },
                   lados: { type: 'array', items: { type: 'string', enum: ['frente', 'esquerda', 'direita'] } },
@@ -273,7 +277,7 @@ export const FERRAMENTAS: Ferramenta[] = [
               },
               cuba: {
                 type: 'object',
-                description: 'Só para Pia, Lavatório e Tanque',
+                description: 'Só no Lavatório (pia e tanque ficam sempre com cuba embutida; não pergunte)',
                 properties: {
                   tipo: {
                     type: 'string',
