@@ -2,6 +2,7 @@ import { OAuthProvider, AuthorizationError, CimdFetchError } from '@cloudflare/w
 import { heroLogin, expDoToken, ErroHerogran, type Env, type Props } from './base44';
 import { handleMcp } from './mcp';
 import { telaConectar, telaErro } from './pagina';
+import { entregarPdf } from './pdf';
 
 // Servidor MCP da HEROGRAN.
 //  - /authorize: tela de login (empresa + usuário + senha) e consentimento;
@@ -23,6 +24,7 @@ const defaultHandler = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/authorize') return autorizar(request, env);
+    if (url.pathname.startsWith('/orcamento/')) return entregarPdf(url, env);
     if (url.pathname === '/') {
       return new Response('Servidor MCP da HEROGRAN. Endereço do conector: ' + url.origin + '/mcp', {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },

@@ -16,7 +16,8 @@ export interface ResultadoPdf {
   orcamentos?: Array<{ id: unknown; nome: string; total: number }>;
 }
 
-const TEMPO_MAX_MS = 55_000; // o plano grátis encerra o navegador em 60 s
+// cálculo + fotos 3D que faltarem (até 25 s) + PDF
+const TEMPO_MAX_MS = 85_000;
 
 export async function gerarPdfOrcamento(env: Env, props: Props, negocioId: string): Promise<ResultadoPdf> {
   if (!env.BROWSER) return { ok: false, erro: 'Navegador na nuvem não configurado no servidor.' };
@@ -34,7 +35,7 @@ export async function gerarPdfOrcamento(env: Env, props: Props, negocioId: strin
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
-    browser = await puppeteer.launch(env.BROWSER);
+    browser = await puppeteer.launch(env.BROWSER, { keep_alive: 120_000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
     await page.evaluateOnNewDocument(
@@ -61,3 +62,32 @@ export async function gerarPdfOrcamento(env: Env, props: Props, negocioId: strin
 
 export const brl = (v: unknown) =>
   typeof v === 'number' ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : undefined;
+
+// ── PDF no domínio próprio ───────────────────────────────────────
+// O arquivo fica no armazenamento do app (Base44); o Worker entrega pelo endereço dele,
+// assim o cliente não vê "base44" no link. Só serve PDFs públicos deste app.
+const NOME_ARQUIVO = /^[A-Za-z0-9_.-]+\.pdf$/;
+
+export function linkPdfProprio(url: string | undefined, env: Env, origem: string) {
+  if (!url) return url;
+  const nome = url.split('/').pop() || '';
+  if (!NOME_ARQUIVO.test(nome)) return url;
+  const base = (env.ARQUIVOS_URL || origem || '').replace(/\/$/, '');
+  return base ? `${base}/orcamento/${nome}` : url;
+}
+
+export async function entregarPdf(url: URL, env: Env): Promise<Response> {
+  const nome = decodeURIComponent(url.pathname.slice('/orcamento/'.length));
+  if (!NOME_ARQUIVO.test(nome)) return new Response('Arquivo não encontrado', { status: 404 });
+  const origem = await fetch(`https://media.base44.com/files/public/${env.BASE44_APP_ID}/${nome}`, { cf: { cacheTtl: 86400, cacheEverything: true } } as RequestInit);
+  if (!origem.ok || !origem.body) return new Response('Arquivo não encontrado', { status: 404 });
+  const amigavel = nome.replace(/^[a-z0-9]+_/, ''); // tira o prefixo aleatório do armazenamento
+  return new Response(origem.body, {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${amigavel}"`,
+      'Cache-Control': 'public, max-age=86400',
+      'X-Robots-Tag': 'noindex',
+    },
+  });
+}

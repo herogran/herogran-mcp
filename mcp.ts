@@ -28,7 +28,7 @@ function resultadoTexto(dados: unknown, isError = false) {
   };
 }
 
-async function tratar(msg: Mensagem, env: Env, props: Props) {
+async function tratar(msg: Mensagem, env: Env, props: Props, origem: string) {
   const { id, method, params } = msg;
   switch (method) {
     case 'initialize': {
@@ -53,7 +53,7 @@ async function tratar(msg: Mensagem, env: Env, props: Props) {
         return ok(id, resultadoTexto('Sua sessão do HEROGRAN expirou. Desconecte e conecte de novo o conector HEROGRAN para entrar outra vez.', true));
       }
       try {
-        const dados = await executarFerramenta(env, props, nome, params?.arguments || {});
+        const dados = await executarFerramenta(env, props, nome, params?.arguments || {}, origem);
         return ok(id, resultadoTexto(dados));
       } catch (e) {
         const msgErro = e instanceof ErroHerogran && e.status === 401
@@ -90,7 +90,7 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
       continue;
     }
     if (m.id === undefined || m.id === null) continue; // notificação (ex.: notifications/initialized)
-    respostas.push(await tratar(m, env, props));
+    respostas.push(await tratar(m, env, props, new URL(request.url).origin));
   }
 
   if (!respostas.length) return new Response(null, { status: 202 });

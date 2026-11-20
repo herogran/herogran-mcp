@@ -1,5 +1,5 @@
 import { acaoMcp, type Env, type Props } from './base44';
-import { gerarPdfOrcamento, brl, type ResultadoPdf } from './pdf';
+import { gerarPdfOrcamento, brl, linkPdfProprio, type ResultadoPdf } from './pdf';
 
 // Ferramentas que o Claude/ChatGPT enxergam. Cada uma vira uma ação da função
 // mcpHerogran no Base44, que aplica empresa, perfil e permissões.
@@ -336,19 +336,19 @@ function linksAbsolutos(valor: unknown, base: string, emLink = false): unknown {
   return valor;
 }
 
-function resumoPdf(p: ResultadoPdf) {
+function resumoPdf(p: ResultadoPdf, env: Env, origem: string) {
   if (!p.ok) return { pdf_gerado: false, motivo: p.erro };
   return {
     pdf_gerado: true,
     valor_total: brl(p.total),
-    pdf: p.pdf_url,
+    pdf: linkPdfProprio(p.pdf_url, env, origem),
     orcamento_no_pdf: p.orcamento_no_pdf,
     valor_do_orcamento_no_pdf: brl(p.total_orcamento_no_pdf),
     ...(p.orcamentos && p.orcamentos.length > 1 ? { orcamentos: p.orcamentos.map((o) => ({ nome: o.nome, valor: brl(o.total) })) } : {}),
   };
 }
 
-export async function executarFerramenta(env: Env, props: Props, nome: string, args: Record<string, unknown>) {
+export async function executarFerramenta(env: Env, props: Props, nome: string, args: Record<string, unknown>, origem = '') {
   const f = FERRAMENTAS.find((x) => x.name === nome);
   if (!f) throw new Error(`Ferramenta desconhecida: ${nome}`);
   const base = env.APP_URL.replace(/\/$/, '');
@@ -358,7 +358,7 @@ export async function executarFerramenta(env: Env, props: Props, nome: string, a
     const id = String(args.id || '');
     const d = linksAbsolutos(await acaoMcp(env, props, 'detalhar_negociacao', { id }), base) as any; // confere empresa e acesso
     const p = await gerarPdfOrcamento(env, props, id);
-    return { negociacao: d.titulo, cliente: d.cliente, ...resumoPdf(p), link_negociacao: d.links?.negociacao };
+    return { negociacao: d.titulo, cliente: d.cliente, ...resumoPdf(p, env, origem), link_negociacao: d.links?.negociacao };
   }
 
   const r = linksAbsolutos(await acaoMcp(env, props, f.acao, args), base) as any;
@@ -367,7 +367,7 @@ export async function executarFerramenta(env: Env, props: Props, nome: string, a
   if (nome === 'adicionar_pecas_orcamento' && r?.success) {
     const p = await gerarPdfOrcamento(env, props, String(args.negocio_id || ''));
     const { aviso, ...resto } = r;
-    return { ...resto, ...resumoPdf(p), ...(p.ok ? {} : { aviso }) };
+    return { ...resto, ...resumoPdf(p, env, origem), ...(p.ok ? {} : { aviso }) };
   }
 
   // Ferramentas que reaproveitam detalhar_negociacao devolvem só o que interessa
