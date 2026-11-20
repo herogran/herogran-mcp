@@ -1,4 +1,5 @@
 import { acaoMcp, type Env, type Props } from './base44';
+import { gerarPdfOrcamento, brl, type ResultadoPdf } from './pdf';
 
 // Ferramentas que o Claude/ChatGPT enxergam. Cada uma vira uma ação da função
 // mcpHerogran no Base44, que aplica empresa, perfil e permissões.
@@ -83,19 +84,20 @@ export const FERRAMENTAS: Ferramenta[] = [
     acao: 'detalhar_negociacao',
   },
   {
-    name: 'link_pdf_orcamento',
-    title: 'Baixar PDF do orçamento',
+    name: 'gerar_pdf_orcamento',
+    title: 'Gerar PDF e valor do orçamento',
     description:
-      'Devolve o link da negociação no HEROGRAN, onde fica o botão que gera e baixa o PDF do orçamento. ' +
-      'O PDF é gerado no navegador, então entregue o link ao usuário em vez de tentar anexar um arquivo.',
+      'Calcula o orçamento da negociação com a tabela da marmoraria, grava o valor na negociação e gera o PDF oficial do HEROGRAN ' +
+      '(o mesmo do botão). Devolve o valor total e o link do PDF para baixar. Leva de 15 a 50 segundos. ' +
+      'Já roda sozinho depois de adicionar_pecas_orcamento; use para gerar de novo ou para orçamentos montados no sistema.',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: 'Id da negociação' } },
       required: ['id'],
       additionalProperties: false,
     },
-    annotations: { ...leitura, title: 'Baixar PDF do orçamento' },
-    acao: 'detalhar_negociacao',
+    annotations: { ...criacao, idempotentHint: true, title: 'Gerar PDF e valor do orçamento' },
+    acao: 'gerar_pdf',
   },
   {
     name: 'criar_negocio',
@@ -222,7 +224,7 @@ export const FERRAMENTAS: Ferramenta[] = [
       'Material: use listar_materiais; se houver mais de um nome parecido (ex.: "Verde Ubatuba" e "Verde Ubatuba 2"), use o nome idêntico ao que o usuário falou, e só pergunte se nenhum for idêntico. ' +
       'Medidas sempre em centímetros: converta se o usuário falar em metros ou milímetros. ' +
       'Antes de gravar, mostre um resumo curto e peça confirmação. ' +
-      'O preço é calculado pelo HEROGRAN: depois de gravar, entregue o link do projeto para o usuário conferir valores, acabamentos e gerar o PDF.',
+      'Depois de gravar, o HEROGRAN calcula sozinho: a resposta já traz o valor total e o link do PDF oficial. Entregue os dois ao usuário.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -334,22 +336,41 @@ function linksAbsolutos(valor: unknown, base: string, emLink = false): unknown {
   return valor;
 }
 
+function resumoPdf(p: ResultadoPdf) {
+  if (!p.ok) return { pdf_gerado: false, motivo: p.erro };
+  return {
+    pdf_gerado: true,
+    valor_total: brl(p.total),
+    pdf: p.pdf_url,
+    orcamento_no_pdf: p.orcamento_no_pdf,
+    valor_do_orcamento_no_pdf: brl(p.total_orcamento_no_pdf),
+    ...(p.orcamentos && p.orcamentos.length > 1 ? { orcamentos: p.orcamentos.map((o) => ({ nome: o.nome, valor: brl(o.total) })) } : {}),
+  };
+}
+
 export async function executarFerramenta(env: Env, props: Props, nome: string, args: Record<string, unknown>) {
   const f = FERRAMENTAS.find((x) => x.name === nome);
   if (!f) throw new Error(`Ferramenta desconhecida: ${nome}`);
   const base = env.APP_URL.replace(/\/$/, '');
+
+  // PDF + valor pelo próprio HEROGRAN (navegador na nuvem)
+  if (f.acao === 'gerar_pdf') {
+    const id = String(args.id || '');
+    const d = linksAbsolutos(await acaoMcp(env, props, 'detalhar_negociacao', { id }), base) as any; // confere empresa e acesso
+    const p = await gerarPdfOrcamento(env, props, id);
+    return { negociacao: d.titulo, cliente: d.cliente, ...resumoPdf(p), link_negociacao: d.links?.negociacao };
+  }
+
   const r = linksAbsolutos(await acaoMcp(env, props, f.acao, args), base) as any;
 
-  // Ferramentas que reaproveitam detalhar_negociacao devolvem só o que interessa
-  if (nome === 'link_pdf_orcamento') {
-    return {
-      negociacao: r.titulo,
-      cliente: r.cliente,
-      tem_orcamento: r.projeto_orcamento?.tem_projeto ?? false,
-      link: r.links?.pdf_orcamento,
-      como_baixar: 'Abra o link e use o botão do PDF do orçamento na tela da negociação.',
-    };
+  // Tudo automático: depois de lançar as peças, já calcula, grava o valor e gera o PDF
+  if (nome === 'adicionar_pecas_orcamento' && r?.success) {
+    const p = await gerarPdfOrcamento(env, props, String(args.negocio_id || ''));
+    const { aviso, ...resto } = r;
+    return { ...resto, ...resumoPdf(p), ...(p.ok ? {} : { aviso }) };
   }
+
+  // Ferramentas que reaproveitam detalhar_negociacao devolvem só o que interessa
   if (nome === 'abrir_cad3d') {
     return { negociacao: r.titulo, cliente: r.cliente, projeto: r.projeto_orcamento, link: r.links?.projeto_cad3d };
   }

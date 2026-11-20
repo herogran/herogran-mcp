@@ -97,6 +97,8 @@ async function autorizar(request: Request, env: Env): Promise<Response> {
       nickname: String(login.session.nickname),
       empresaId: String(login.session.empresaId),
       empresa: String(login.empresa?.nome || ''),
+      role: String(login.session.role || 'user'),
+      fullName: String(login.session.full_name || ''),
     };
 
     const aprovado = await oauth.approveConsent(request, handle);

@@ -4,7 +4,9 @@
   "main": "index.ts",
   "compatibility_date": "2026-10-01",
   // Necessário para o CIMD (busca do documento do cliente só em endereços públicos)
-  "compatibility_flags": ["global_fetch_strictly_public"],
+  "compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
+  // Navegador na nuvem (Browser Run): abre a página de impressão do orçamento
+  "browser": { "binding": "BROWSER" },
   "kv_namespaces": [
     // KV "herogran-mcp-OAUTH_KV" (tokens do OAuth)
     { "binding": "OAUTH_KV", "id": "c430fbbe56c74a65ad50748c0b7b1cb1" }

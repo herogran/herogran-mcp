@@ -10,6 +10,8 @@ export interface Env {
   /** Domínio do app HEROGRAN (onde as funções rodam e para onde os links apontam) */
   APP_URL: string;
   BASE44_APP_ID: string;
+  /** Navegador na nuvem (Browser Run) */
+  BROWSER: Fetcher;
 }
 
 /** O que fica guardado (cifrado) no token do conector */
@@ -20,6 +22,8 @@ export interface Props {
   nickname: string;
   empresaId: string;
   empresa: string;
+  role?: string;
+  fullName?: string;
   [key: string]: unknown;
 }
 
