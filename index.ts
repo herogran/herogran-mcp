@@ -111,7 +111,16 @@ async function autorizar(request: Request, env: Env): Promise<Response> {
     return new Response(null, { status: 302, headers: aprovado.headers });
   } catch (error) {
     if (error instanceof AuthorizationError && error.redirectTo) return Response.redirect(error.redirectTo, 302);
-    if (error instanceof AuthorizationError) return telaErro(error.description);
+    if (error instanceof AuthorizationError) {
+      // A biblioteca responde em inglês; o cliente vê a explicação em português
+      console.log('authorize falhou:', error.code, error.description);
+      const consentimento = request.method === 'POST';
+      return telaErro(
+        consentimento
+          ? 'A tela de conexão expirou (ela vale 10 minutos) ou foi aberta em outro navegador.'
+          : 'O pedido de conexão é inválido ou expirou.',
+      );
+    }
     if (error instanceof CimdFetchError) return telaErro('Não foi possível verificar o aplicativo que pediu a conexão.');
     throw error;
   }
